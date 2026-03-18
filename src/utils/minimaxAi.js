@@ -43,7 +43,7 @@ ${boardText}
     const response = await axios.post(
       `${BASE_URL}/text/chatcompletion_v2`,
       {
-        model: 'abab6.5s-chat',
+        model: 'MiniMax-M2.5',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -73,14 +73,38 @@ ${boardText}
     
     console.log('📝 AI 内容:', content)
     
-    // 解析 JSON 响应
-    const match = content.match(/\{[\s\S]*\}/)
-    if (match) {
-      const result = JSON.parse(match[0])
+    // 解析 JSON 响应 - 尝试多种格式
+    try {
+      // 尝试直接解析整个 content
+      const result = JSON.parse(content)
       console.log('✅ 解析结果:', result)
       
-      if (result.row >= 0 && result.row < 15 && result.col >= 0 && result.col < 15) {
-        return [result.row, result.col]
+      if (result.row !== undefined && result.col !== undefined) {
+        const row = parseInt(result.row)
+        const col = parseInt(result.col)
+        if (row >= 0 && row < 15 && col >= 0 && col < 15) {
+          console.log('✅ 返回坐标:', [row, col])
+          return [row, col]
+        }
+      }
+    } catch (e) {
+      // 如果直接解析失败，尝试用正则提取
+      console.log('🔄 尝试正则提取...')
+      const match = content.match(/\{[^}]+\}/)
+      if (match) {
+        try {
+          const result = JSON.parse(match[0].replace(/\s+/g, ' ').trim())
+          console.log('✅ 正则解析结果:', result)
+          
+          const row = parseInt(result.row)
+          const col = parseInt(result.col)
+          if (row >= 0 && row < 15 && col >= 0 && col < 15) {
+            console.log('✅ 返回坐标:', [row, col])
+            return [row, col]
+          }
+        } catch (e2) {
+          console.error('❌ 正则解析失败:', e2)
+        }
       }
     }
     

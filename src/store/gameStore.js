@@ -89,8 +89,9 @@ export const useGameStore = create((set, get) => ({
     if (winner || isAIThinking) return false
     if (board[row][col] !== null) return false
 
-    // 人机模式下，玩家只能执黑棋
-    if (gameMode === 'PvAI' && currentPlayer !== 'black') return false
+    // 人机模式下，玩家只能执黑棋手动落子，AI落子不受此限制
+    // 通过 isAIThinking 标记来判断是否是AI在落子
+    if (gameMode === 'PvAI' && currentPlayer !== 'black' && !get().isAIThinking) return false
 
     // 创建新棋盘
     const newBoard = board.map(r => [...r])

@@ -12,7 +12,8 @@ const Board = () => {
     aiDifficulty, 
     winner,
     lastMove,
-    placePiece
+    placePiece,
+    setAIThinking
   } = useGameStore()
 
   // 触发 AI 落子 (当轮到白棋且游戏未结束时)
@@ -20,15 +21,24 @@ const Board = () => {
     // 跳过初始渲染，只在玩家落子后触发
     if (gameMode !== 'PvAI' || currentPlayer !== 'white' || winner) return
     
+    console.log('🎯 AI 触发! currentPlayer:', currentPlayer)
+    
     const timer = setTimeout(async () => {
       const state = useGameStore.getState()
+      console.log('🎯 AI 开始计算, board:', state.board)
       let aiMove
+      
+      // 设置 AI 思考状态
+      setAIThinking(true)
       
       if (aiDifficulty === 'minimax') {
         // MiniMax AI
+        console.log('🎯 使用 MiniMax AI')
         aiMove = await getAIMoveFromMiniMax(state.board)
+        console.log('🎯 MiniMax 返回:', aiMove)
         // 如果 API 调用失败，使用本地 AI 作为后备
         if (!aiMove) {
+          console.log('🎯 回退到本地 AI')
           aiMove = getAIMove(state.board, 'hard')
         }
       } else {
@@ -36,13 +46,17 @@ const Board = () => {
         aiMove = getAIMove(state.board, aiDifficulty)
       }
       
+      console.log('🎯 AI 落子:', aiMove)
       if (aiMove) {
         placePiece(aiMove[0], aiMove[1])
       }
+      
+      // 清除 AI 思考状态
+      setAIThinking(false)
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [currentPlayer, gameMode, winner, aiDifficulty])
+  }, [currentPlayer, gameMode, winner, aiDifficulty, board, placePiece, setAIThinking])
 
   const CELL_SIZE = 35
   const PADDING = 30
