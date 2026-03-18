@@ -12,8 +12,7 @@ const Board = () => {
     aiDifficulty, 
     winner,
     lastMove,
-    placePiece,
-    setAIThinking
+    placePiece
   } = useGameStore()
 
   // 触发 AI 落子 (当轮到白棋且游戏未结束时)
@@ -21,15 +20,12 @@ const Board = () => {
     // 跳过初始渲染，只在玩家落子后触发
     if (gameMode !== 'PvAI' || currentPlayer !== 'white' || winner) return
     
-    console.log('🎯 AI 触发! currentPlayer:', currentPlayer)
+    console.log('🎯 AI 触发!')
     
     const timer = setTimeout(async () => {
       const state = useGameStore.getState()
-      console.log('🎯 AI 开始计算, board:', state.board)
+      console.log('🎯 AI 开始计算')
       let aiMove
-      
-      // 设置 AI 思考状态
-      setAIThinking(true)
       
       if (aiDifficulty === 'minimax') {
         // MiniMax AI
@@ -48,15 +44,13 @@ const Board = () => {
       
       console.log('🎯 AI 落子:', aiMove)
       if (aiMove) {
+        console.log('🎯 调用 placePiece:', aiMove[0], aiMove[1])
         placePiece(aiMove[0], aiMove[1])
       }
-      
-      // 清除 AI 思考状态
-      setAIThinking(false)
     }, 500)
     
     return () => clearTimeout(timer)
-  }, [currentPlayer, gameMode, winner, aiDifficulty, board, placePiece, setAIThinking])
+  }, [currentPlayer, gameMode, winner, aiDifficulty])
 
   const CELL_SIZE = 35
   const PADDING = 30
@@ -167,7 +161,8 @@ const Board = () => {
 
   // 处理点击
   const handleClick = (e) => {
-    if (winner) return
+    // 游戏结束或不是玩家回合时不能点击
+    if (winner || currentPlayer !== 'black') return
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()

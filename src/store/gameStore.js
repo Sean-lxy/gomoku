@@ -83,15 +83,28 @@ export const useGameStore = create((set, get) => ({
 
   // 落子
   placePiece: (row, col) => {
-    const { board, currentPlayer, winner, isAIThinking, gameMode } = get()
+    console.log('📍 placePiece 调用:', row, col)
+    const { board, currentPlayer, winner, gameMode } = get()
     
-    // 游戏结束或有AI在思考时不能落子
-    if (winner || isAIThinking) return false
-    if (board[row][col] !== null) return false
+    console.log('📍 当前状态:', { currentPlayer, winner, gameMode })
+    
+    // 游戏结束时不能落子
+    if (winner) {
+      console.log('📍 游戏已结束')
+      return false
+    }
+    if (board[row][col] !== null) {
+      console.log('📍 位置已有棋子')
+      return false
+    }
 
-    // 人机模式下，玩家只能执黑棋手动落子，AI落子不受此限制
-    // 通过 isAIThinking 标记来判断是否是AI在落子
-    if (gameMode === 'PvAI' && currentPlayer !== 'black' && !get().isAIThinking) return false
+    // 人机模式下，玩家只能执黑棋手动落子
+    if (gameMode === 'PvAI' && currentPlayer !== 'black') {
+      console.log('📍 不是玩家回合, currentPlayer:', currentPlayer)
+      return false
+    }
+
+    console.log('📍 落子成功!')
 
     // 创建新棋盘
     const newBoard = board.map(r => [...r])
