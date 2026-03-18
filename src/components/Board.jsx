@@ -5,6 +5,8 @@ import { getAIMoveFromMiniMax } from '../utils/minimaxAi'
 
 const Board = () => {
   const canvasRef = useRef(null)
+  const isAIThinking = useRef(false)  // 使用 ref 避免重复触发
+  
   const { 
     board, 
     currentPlayer, 
@@ -17,41 +19,74 @@ const Board = () => {
 
   // 触发 AI 落子 (当轮到白棋且游戏未结束时)
   useEffect(() => {
-    // 跳过初始渲染，只在玩家落子后触发
-    if (gameMode !== 'PvAI' || currentPlayer !== 'white' || winner) return
+    // 跳过条件：非人机模式 / 不是AI回合 / 游戏已结束 / AI正在思考
+    if (gameMode !== 'PvAI' || currentPlayer !== 'white' || winner || isAIThinking.current) return
     
     console.log('🎯 AI 触发!')
+    isAIThinking.current = true
     
     const timer = setTimeout(async () => {
       const state = useGameStore.getState()
+      
+      // 再次检查
+      if (state.winner || state.currentPlayer !== 'white') {
+        isAIThinking.current = false
+        return
+      }
+      
       console.log('🎯 AI 开始计算')
-      let aiMove
+      let aiMove = null
       
       if (aiDifficulty === 'minimax') {
-        // MiniMax AI
         console.log('🎯 使用 MiniMax AI')
-        aiMove = await getAIMoveFromMiniMax(state.board)
-        console.log('🎯 MiniMax 返回:', aiMove)
-        // 如果 API 调用失败，使用本地 AI 作为后备
+        
+        try {
+          aiMove = await getAIMoveFromMiniMax(state.board)
+          console.log('🎯 MiniMax 返回:', aiMove)
+        } catch (error) {
+          console.error('🎯 MiniMax 错误:', error)
+        }
+        
+        // 如果 API 调用失败或返回无效位置，使用本地 AI
         if (!aiMove) {
           console.log('🎯 回退到本地 AI')
           aiMove = getAIMove(state.board, 'hard')
         }
       } else {
-        // 本地 AI
         aiMove = getAIMove(state.board, aiDifficulty)
       }
       
-      console.log('🎯 AI 落子:', aiMove)
-      if (aiMove) {
-        console.log('🎯 调用 placePiece:', aiMove[0], aiMove[1])
-        placePiece(aiMove[0], aiMove[1])
+      // 获取最新状态
+      const currentState = useGameStore.getState()
+      
+      // 检查游戏是否已结束
+      if (currentState.winner || currentState.currentPlayer !== 'white') {
+        isAIThinking.current = false
+        return
       }
-    }, 500)
+      
+      console.log('🎯 AI 落子:', aiMove)
+      
+      // 检查位置是否为空
+      if (aiMove && currentState.board[aiMove[0]][aiMove[1]] === null) {
+        placePiece(aiMove[0], aiMove[1], true)
+      } else {
+        console.log('⚠️ 位置无效，尝试找其他位置')
+        aiMove = getAIMove(currentState.board, 'hard')
+        if (aiMove && currentState.board[aiMove[0]][aiMove[1]] === null) {
+          placePiece(aiMove[0], aiMove[1], true)
+        }
+      }
+      
+      isAIThinking.current = false
+    }, 1000) // 1秒延迟
     
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      isAIThinking.current = false
+    }
   }, [currentPlayer, gameMode, winner, aiDifficulty])
-
+    
   const CELL_SIZE = 35
   const PADDING = 30
   const BOARD_SIZE = 15 * CELL_SIZE

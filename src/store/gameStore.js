@@ -82,8 +82,8 @@ export const useGameStore = create((set, get) => ({
   setAIDifficulty: (difficulty) => set({ aiDifficulty: difficulty }),
 
   // 落子
-  placePiece: (row, col) => {
-    console.log('📍 placePiece 调用:', row, col)
+  placePiece: (row, col, isAI = false) => {
+    console.log('📍 placePiece 调用:', row, col, 'isAI:', isAI)
     const { board, currentPlayer, winner, gameMode } = get()
     
     console.log('📍 当前状态:', { currentPlayer, winner, gameMode })
@@ -98,8 +98,8 @@ export const useGameStore = create((set, get) => ({
       return false
     }
 
-    // 人机模式下，玩家只能执黑棋手动落子
-    if (gameMode === 'PvAI' && currentPlayer !== 'black') {
+    // 人机模式下，玩家只能执黑棋手动落子，AI 落子不受此限制
+    if (gameMode === 'PvAI' && !isAI && currentPlayer !== 'black') {
       console.log('📍 不是玩家回合, currentPlayer:', currentPlayer)
       return false
     }
