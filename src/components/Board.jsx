@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { getAIMove } from '../utils/ai'
+import { getAIMoveFromMiniMax } from '../utils/minimaxAi'
 
 const Board = () => {
   const canvasRef = useRef(null)
@@ -11,10 +12,37 @@ const Board = () => {
     aiDifficulty, 
     winner,
     lastMove,
-    isAIThinking,
-    placePiece,
-    setAIThinking
+    placePiece
   } = useGameStore()
+
+  // 触发 AI 落子 (当轮到白棋且游戏未结束时)
+  useEffect(() => {
+    // 跳过初始渲染，只在玩家落子后触发
+    if (gameMode !== 'PvAI' || currentPlayer !== 'white' || winner) return
+    
+    const timer = setTimeout(async () => {
+      const state = useGameStore.getState()
+      let aiMove
+      
+      if (aiDifficulty === 'minimax') {
+        // MiniMax AI
+        aiMove = await getAIMoveFromMiniMax(state.board)
+        // 如果 API 调用失败，使用本地 AI 作为后备
+        if (!aiMove) {
+          aiMove = getAIMove(state.board, 'hard')
+        }
+      } else {
+        // 本地 AI
+        aiMove = getAIMove(state.board, aiDifficulty)
+      }
+      
+      if (aiMove) {
+        placePiece(aiMove[0], aiMove[1])
+      }
+    }, 500)
+    
+    return () => clearTimeout(timer)
+  }, [currentPlayer, gameMode, winner, aiDifficulty])
 
   const CELL_SIZE = 35
   const PADDING = 30
@@ -124,8 +152,8 @@ const Board = () => {
   }, [board, lastMove])
 
   // 处理点击
-  const handleClick = async (e) => {
-    if (winner || isAIThinking) return
+  const handleClick = (e) => {
+    if (winner) return
 
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -140,19 +168,7 @@ const Board = () => {
     if (row < 0 || row >= 15 || col < 0 || col >= 15) return
 
     // 尝试落子
-    const success = placePiece(row, col)
-    
-    // 如果是人机模式且玩家成功落子，触发 AI
-    if (success && gameMode === 'PvAI' && !winner) {
-      setAIThinking(true)
-      
-      // 延迟一下，让玩家看到自己的棋子
-      setTimeout(() => {
-        const aiMove = getAIMove(board, aiDifficulty)
-        placePiece(aiMove[0], aiMove[1])
-        setAIThinking(false)
-      }, 300)
-    }
+    placePiece(row, col)
   }
 
   return (

@@ -76,18 +76,23 @@ const GameInfo = () => {
       {gameMode === 'PvAI' && (
         <div className="space-y-2">
           <label className="text-sm text-gray-600">AI 难度</label>
-          <div className="flex gap-2">
-            {['easy', 'medium', 'hard'].map(diff => (
+          <div className="flex gap-2 flex-wrap">
+            {[
+              { value: 'easy', label: '简单' },
+              { value: 'medium', label: '中等' }, 
+              { value: 'hard', label: '困难' },
+              { value: 'minimax', label: '🤖 MiniMax' }
+            ].map(diff => (
               <button
-                key={diff}
-                onClick={() => setAIDifficulty(diff)}
+                key={diff.value}
+                onClick={() => setAIDifficulty(diff.value)}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm transition-all ${
-                  aiDifficulty === diff
+                  aiDifficulty === diff.value
                     ? 'bg-purple-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {diff === 'easy' ? '简单' : diff === 'medium' ? '中等' : '困难'}
+                {diff.label}
               </button>
             ))}
           </div>
